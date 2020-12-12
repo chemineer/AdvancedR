@@ -1,0 +1,260 @@
+---
+title: "Untitled"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## 값 바꾸기 및 결측치 처리
+
+```{r }
+load("./data/wd.RData")
+nwd = wd
+nwd[nwd$x2 < 0.11, "x2"] = 99
+nwd[nwd == 99 ] = NA
+nwd[nwd > 0.9] = 99
+nwd[nwd == 99] = NA
+head(nwd, n=5)
+rowSums(is.na(nwd))
+
+colSums(is.na(nwd))
+
+mywd = na.omit(nwd)
+head(mywd)
+
+```
+
+## 변수이름 바꾸기
+
+```{r }
+#fix(wd)
+names(nwd)[6] = "ny"
+colnames(nwd) = c("a1", "a2", "a3", "a4", "a5", "newy")
+
+```
+
+## 변수이름 바꾸기 2
+
+```{r }
+library(reshape)
+names = c("김", "이", "박")
+ages = c(50,44,35)
+mydata <- data.frame(names,ages)
+names(mydata) 
+mydata
+mydata <- rename(mydata, c(names="name"))
+mydata <- rename(mydata, c(ages="age"))
+mydata
+
+
+```
+
+## 값 라벨
+
+```{r }
+insurance = read.table("./data/insurance.txt", header=T)
+head(insurance)
+insurance$job = factor(insurance$job, levels=c(1:3), 
+labels=c("근로자","사무직","전문가"))
+insurance$edu2 = ordered(insurance$edu, levels=c(1:5), 
+labels=c("무학","국졸","중졸","고졸","대졸"))
+head(insurance)
+
+job.freq = table(insurance$job)
+barplot(job.freq)
+title("막대그림 : job ")
+insurance$job = factor(insurance$job, levels=c(1:3), 
+labels=c("근로자","사무직","전문가"))
+job.freq2 = table(insurance$job)
+barplot(job.freq2)
+title("막대그림2 : job ")
+
+```
+
+## 값 변환
+
+```{r }
+library(xlsx)
+drug = read.xlsx("./data/drug.xlsx", 1)
+# Replace data in the field : Method 1
+drug$agr = drug$age
+drug$agr[drug$agr >=20 & drug$agr <= 40 ] = 1
+drug$agr[drug$agr > 40 & drug$agr <= 60 ] = 2
+drug$agr[drug$agr > 60 ] = 3
+drug[c(1,20,40, 95),]
+
+
+```
+
+## 값 변환 2
+
+```{r }
+# Use recode function in car package : Method 2
+
+library(car)
+drug$agr2 = drug$age
+drug$agr2 = recode(drug$age, "lo:40=1; 40:60=2; 60:hi=3")
+drug[c(1,20,40, 80),]
+
+drug$agr2 = ordered(drug$agr2, levels=c(1:3),
+labels=c("Lo~40","40~60","60~Hi"))
+agr2.freq=table(drug$agr2)
+agr2.freq
+barplot(agr2.freq, main="막대그림")
+
+```
+
+## 케이스 선택
+
+```{r }
+insurance = read.table("./data/insurance.txt", header=T)
+select1 = insurance[insurance$sex=='m',]
+head(select1, n=3)
+
+select2 = insurance[which(insurance$sex=='f' & insurance$job==2),]
+head(select2, n=3)
+
+select3 = insurance[which(insurance$job==3 & insurance$salary >= 140),]
+head(select3, n=3)
+
+select3 = insurance[insurance$job==3 & insurance$salary >= 140,]
+head(select3, n=3)
+
+```
+
+## deplyr 패키지
+
+```{r }
+library(dplyr)
+dim(insurance)
+
+tbl_df(insurance)
+
+#데이터 추출
+sel_1 = filter(insurance, sex=='m', edu == 3)
+sel_1
+
+sel_2 = filter(insurance, sex=='m' | edu == 3)
+sel_2[c(1:3, 6:8),]
+head(insurance)
+
+#변수 선택
+sel_3 = select(insurance, sex, job, amount, salary)
+head(sel_3, 3)
+
+sel_4 = filter(select(insurance, sex, job, amount, salary), job==1)
+head(sel_4, 3)
+
+sel_5 = select(insurance, job:salary)
+head(sel_5, 3)
+
+
+insu_add = mutate(insurance, amopersal = amount/salary)
+head(insu_add)
+
+#cbind 를 사용하는 경우
+amopersal = insurance$amount / insurance$salary
+insu_add2 = cbind(insurance, amopersal)
+
+#정렬
+sel_3_arr = arrange(sel_3, sex, job)
+head(sel_3_arr,3)
+
+sel_3_arrd = arrange(sel_3, desc(sex), desc(job))
+head(sel_3_arrd,3)
+
+#요약 결과
+ins_job = arrange(insurance, job)
+ins_job_g = group_by(ins_job, job)
+ins_job_gm = summarize(ins_job_g, amMean=mean(amount), aSal=mean(salary))
+ins_job_gm
+
+#체인 기능
+b1 = select(insurance, amount, salary)
+b2 = filter(b1, salary > 130)
+b2
+
+nb2 = insurance %>%
+select(amount, salary) %>%
+filter(salary > 130 )
+nb2
+
+```
+
+```{r }
+library(nycflights13)
+dim(flights)
+tbl_df(flights)
+
+```
+
+## deplyr 
+```{r }
+library(dplyr)
+library(hflights) 
+# hflights is flights from two Houston airports in 2011
+data(hflights)
+head(hflights)
+
+flights = tbl_df(hflights)
+flights
+
+# base R approach to view all flights on January 1
+flights[flights$Month==1 & flights$DayofMonth==1, ]
+
+# dplyr approach 
+# note: you can use comma or &(ampersand) to represent AND condition 
+filter(flights, Month==1, DayofMonth==1)
+
+# use pipe for OR condition
+filter(flights, UniqueCarrier=="AA" | UniqueCarrier=="UA")
+
+# base R approach to select DepTime, ArrTime, and FlightNum columns 
+flights[, c("DepTime", "ArrTime", "FlightNum")]
+
+# dplyr approach 
+select(flights, DepTime, ArrTime, FlightNum)
+
+# use colon to select multiple contiguous columns, and use `contains` to match columns by name 
+# note: `starts_with`, `ends_with`, and `matches` (for regular expressions) can also be used to match 
+# columns by name 
+select(flights, Year:DayofMonth, contains("Taxi"), contains("Delay"))
+
+a1 = select(flights, UniqueCarrier, DepDelay)
+a2 = filter(a1, DepDelay > 60)
+na2 = flights %>%
+select(UniqueCarrier, DepDelay) %>%
+filter(DepDelay > 60)
+na2
+
+# base R approach to select UniqueCarrier and DepDelay columns and sort by DepDelay
+flights[order(flights$DepDelay), c("UniqueCarrier", "DepDelay")]
+
+flights %>%
+select(UniqueCarrier, DepDelay) %>%
+arrange(DepDelay)
+
+# use `desc` for descending 
+flights %>% 
+select(UniqueCarrier, DepDelay) %>% 
+arrange(desc(DepDelay))
+
+# base R approach to create a new variable Speed (in mph)
+flights$Speed <- flights$Distance / flights$AirTime*60 
+flights[, c("Distance", "AirTime", "Speed")]
+flights %>%
+select(Distance, AirTime) %>%
+mutate(Speed = Distance/AirTime*60)
+
+flights %>%
+group_by(Dest) %>%
+summarise(avg_delay = mean(ArrDelay, na.rm=TRUE))
+
+flights %>%
+group_by(UniqueCarrier) %>%
+summarise_each(funs(mean), Cancelled, Diverted)
+
+
+```

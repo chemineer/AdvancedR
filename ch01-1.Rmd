@@ -1,0 +1,115 @@
+---
+title: "Untitled"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Working directory
+
+작업영역 보기/작업영역 지정:
+
+```{r }
+getwd()
+setwd(choose.dir()) #select working directory interactively
+```
+## Save R history
+
+R 명령 저장:
+
+```{r }
+savehistory(file="mywork.Rhistory")
+history()
+history(max.show = 10)
+```
+## ex 1.3
+
+텍스트 파일 읽기:
+
+```{r }
+insurance.data=read.table("./data/insurance.txt",header=T)
+insurance.data[c(10,11),]
+insurance2.data=read.table("./data/insurance2.txt",header=T,na.string="-9")
+insurance2.data[c(15,16),]
+csv.data=read.csv("./data/csv.txt",header=T)
+tab.data=read.table("./data/tab.txt",header=T,sep="\t")
+write.table(tab.data,file="./data/test.txt")
+```
+
+## ex 1.4
+
+고정형식 텍스트 데이터 읽기
+
+```{r }
+fwf.data = read.fwf(file="./data/insurance3.txt", 
+widths=c(2,2,3,3,3,6,6), 
+col.names=c("id","sex","job","religion","edu","amount","salary"))
+fwf.data[fwf.data$job==-9, "job"] = NA
+fwf.data[fwf.data$edu==-9, "edu"] = NA
+fwf.data[fwf.data$salary==-9, "salary"] = NA
+head(fwf.data, n=3)
+
+fwf2.data = read.fwf(file="./data/insurance3.txt", 
+widths=c(2,-2,-3,3,3,6,6),
+col.names=c("id","religion","edu","amount","salary"))
+head(fwf2.data,n=3)
+
+```
+
+## ex 1.5
+
+엑셀파일 읽기
+
+```{r }
+library(xlsx)
+alcohol.data = read.xlsx("./data/alcohol.xlsx", 1)
+head(alcohol.data, n=2)
+alc2.data = read.xlsx("./data/alcohol.xlsx", 1, colIndex=c(1,2,6:7))
+head(alc2.data, n=2)
+
+```
+
+## 데이터베이스 자료 가져오기
+
+```{r }
+library(RODBC)
+channel <- odbcConnect("score")
+sqlFetch(channel, "midterm")
+sqlFetch(channel, "endterm")
+sqlQuery(channel, "select * from endterm where ID1 > 10")
+sqlQuery(channel, "select * from endterm where math >= 80 ")
+
+midterm <- sqlQuery(channel, "select * from midterm")
+endterm <- sqlQuery(channel, "select * from endterm")
+score <- cbind(midterm, endterm[,c(3:5)])
+summary(score[3:6])
+
+```
+
+## SPSS 데이터 가져오기
+
+```{r }
+library(foreign)
+ex1 = read.spss("./data/ex1-1.sav", 
+to.data.frame=T, use.value.label=T)
+ex1
+mouse.data = ex1[rep(1:nrow(ex1), ex1$count),]
+head(mouse.data)
+attach(mouse.data)
+mouse.table = table(shock, response)
+mouse.table
+summary(mouse.table)
+
+
+```
+
+## RData 저장 및 가져오기
+```{r }
+save(ex1, file="./data/ex1.RData")
+rm(ex1)
+load("./data/ex1.RData")
+ex1
+load(file=file.choose())
+```
